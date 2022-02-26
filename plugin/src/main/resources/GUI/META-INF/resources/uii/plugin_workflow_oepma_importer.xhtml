@@ -30,7 +30,7 @@
                 font-weight: bold;
              }
              
-             #logs {
+             .logs {
                 border: 1px solid #ddd;
                 display: block;
                 margin-top: 20px;
@@ -56,14 +56,14 @@
     						</div>
     						<div class="box-content">
     							<h:panelGroup
-    								rendered="#{!LoginForm.hasRole('Plugin_workflow_sample')}">
+    								rendered="#{!LoginForm.hasRole('Plugin_workflow_oepma_importer')}">
     								<h:outputText
     									styleClass="alert alert-danger alert-dismissable margin-bottom-10 margin-top-10"
-    									value="#{msgs.plugin_administration_missingPermission} Plugin_workflow_sample"/>
+    									value="#{msgs.plugin_administration_missingPermission} Plugin_workflow_oepma_importer"/>
     							</h:panelGroup>
     
     							<h:panelGroup id="actionform" styleClass="col-sm-12"
-    								rendered="#{LoginForm.hasRole('Plugin_workflow_sample')}">
+    								rendered="#{LoginForm.hasRole('Plugin_workflow_oepma_importer')}">
     								
 <!--                                     <h:outputText -->
 <!--                                         styleClass="alert alert-warning alert-dismissable margin-bottom-10 margin-top-10" -->
@@ -133,7 +133,7 @@
 
         <!-- log view -->
         <h:panelGroup id="logs">
-            <h:panelGroup rendered="#{LoginForm.hasRole('Plugin_workflow_sample')}">
+            <h:panelGroup styleClass="logs" rendered="#{LoginForm.hasRole('Plugin_workflow_oepma_importer')}">
                 <ui:repeat
                     var="log"
                     value="#{NavigationForm.workflowPlugin.logQueue}">

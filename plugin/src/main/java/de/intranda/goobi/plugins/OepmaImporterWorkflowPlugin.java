@@ -38,10 +38,10 @@ import ugh.fileformats.mets.MetsMods;
 
 @PluginImplementation
 @Log4j2
-public class SampleWorkflowPlugin implements IWorkflowPlugin, IPushPlugin {
+public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin {
 
     @Getter
-    private String title = "intranda_workflow_sample";
+    private String title = "intranda_workflow_oepma_importer";
     @Getter
     private List<ImportSet> importSets;
     private PushContext pusher;
@@ -66,13 +66,13 @@ public class SampleWorkflowPlugin implements IWorkflowPlugin, IPushPlugin {
 
     @Override
     public String getGui() {
-        return "/uii/plugin_workflow_sample.xhtml";
+        return "/uii/plugin_workflow_oepma_importer.xhtml";
     }
 
     /**
      * Constructor
      */
-    public SampleWorkflowPlugin() {
+    public OepmaImporterWorkflowPlugin() {
         log.info("Sample importer workflow plugin started");
 
         // read important configuration first
