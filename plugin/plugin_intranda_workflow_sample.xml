@@ -1,0 +1,19 @@
+<config_plugin>
+	
+	<!-- import set existing of excel files and pdf files -->
+	<importSet title="a" source="Source Field A" target="TitleDocMain"/>
+	<importSet title="b" source="Source Field B" target="CatalogIDSource"/>
+	<importSet title="c" source="Source Field C" target="CatalogIDDigital"/>
+	<importSet title="d" source="Source Field D" target="shelfmarksource"/>
+	<importSet title="e" source="Max Mustermann" target="Author" person="true"/>
+	
+	<!-- which folder to use as import source -->
+	<importFolder>/opt/digiverso/import/sample/</importFolder>
+	
+	<!-- which workflow to use -->
+	<workflow>Sample_Workflow</workflow>
+	
+	<!-- which publication type to use -->
+	<publicationType>Monograph</publicationType>
+	
+</config_plugin>

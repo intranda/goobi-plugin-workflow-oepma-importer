@@ -1,0 +1,60 @@
+<project default="devbuild">
+
+	<!-- Simply set the name of the plugin here, e.g. "fileUpload" or "file_upload") instead of "sample" -->
+	<property name="name" value="sample" />
+
+	<!-- Use this task to let ant copy the compiled jar files to the target folders for development  -->
+	<target name="devbuild">
+		<exec executable="mvn">
+			<arg value="package"/>
+		</exec>
+		<copy file="module-main/target/plugin_intranda_workflow_${name}.jar" todir="/opt/digiverso/goobi/plugins/workflow/" overwrite="true"/>
+		<copy file="module-gui/target/plugin_intranda_workflow_${name}-GUI.jar" todir="/opt/digiverso/goobi/plugins/GUI/" overwrite="true"/>
+	</target>
+
+	<!-- Use this task to let configuration, plugin, user interface files and maven artifact be renamed to your plugin name -->
+	<target name="rename">
+		<replace file="pom.xml" token="&lt;artifactId&gt;sample" value="&lt;artifactId&gt;${name}" />
+
+		<replace file="module-gui/pom.xml" token="goobi-plugin-workflow-sample" value="goobi-plugin-workflow-${name}" />
+		<replace file="module-gui/pom.xml" token="&lt;artifactId&gt;sample" value="&lt;artifactId&gt;${name}" />
+		<replace file="module-gui/pom.xml" token="&lt;jar.name&gt;plugin_intranda_workflow_sample" value="&lt;jar.name&gt;plugin_intranda_workflow_${name}" />
+
+		<replace file="module-main/pom.xml" token="goobi-plugin-workflow-sample" value="goobi-plugin-workflow-${name}" />
+		<replace file="module-main/pom.xml" token="&lt;artifactId&gt;sample" value="&lt;artifactId&gt;${name}" />
+		<replace file="module-main/pom.xml" token="&lt;jar.name&gt;plugin_intranda_workflow_sample" value="&lt;jar.name&gt;plugin_intranda_workflow_${name}" />
+
+		<move file="plugin_intranda_workflow_sample.xml" tofile="plugin_intranda_workflow_${name}.xml" failonerror="false"/>
+		<move file="src/main/resources/GUI/META-INF/resources/uii/plugin_workflow_sample.xhtml" tofile="src/main/resources/GUI/META-INF/resources/uii/plugin_workflow_${name}.xhtml" failonerror="false"/>
+		<replace file="src/main/resources/GUI/META-INF/resources/uii/plugin_workflow_${name}.xhtml" token="Plugin_workflow_sample" value="Plugin_workflow_${name}" />
+
+		<script language="javascript">
+		    var words = project.getProperty("name").split("_");
+			var name = "";
+			for (i = 0; i &lt; words.length; i++) {
+				name += words[i].replace( /^.|\s\S/g, function(a) { return a.toUpperCase(); });
+            }
+			project.setProperty("capitalize", name);
+		</script>
+		
+		<move file="src/main/java/de/intranda/goobi/plugins/SampleWorkflowPlugin.java" tofile="src/main/java/de/intranda/goobi/plugins/${capitalize}WorkflowPlugin.java" failonerror="false"/>
+		<replace file="src/main/java/de/intranda/goobi/plugins/${capitalize}WorkflowPlugin.java" token="SampleWorkflowPlugin" value="${capitalize}WorkflowPlugin" />
+		<replace file="src/main/java/de/intranda/goobi/plugins/${capitalize}WorkflowPlugin.java" token="intranda_workflow_sample" value="intranda_workflow_${name}" />
+		<replace file="src/main/java/de/intranda/goobi/plugins/${capitalize}WorkflowPlugin.java" token="plugin_workflow_sample" value="plugin_workflow_${name}" />
+		<replace file="src/main/java/de/intranda/goobi/plugins/${capitalize}WorkflowPlugin.java" token="Sample workflow plugin" value="${capitalize} workflow plugin" />
+
+		<move file="src/test/java/de/intranda/goobi/plugins/SamplePluginTest.java" tofile="src/test/java/de/intranda/goobi/plugins/${capitalize}PluginTest.java" failonerror="false"/>
+		<replace file="src/test/java/de/intranda/goobi/plugins/${capitalize}PluginTest.java" token="SamplePluginTest" value="${capitalize}PluginTest" />
+				
+		<replace file="../README.md" token="plugin-workflow-sample" value="plugin-workflow-${name}" />
+		<replace file="../README.md" token="intranda_workflow_sample" value="intranda_workflow_${name}" />
+		<replaceregexp file="../README.md" match="This is the(.*?)interface." flags="gs"
+			replace="This is the ${capitalize} Goobi workflow plugin. A description for this plugin is still missing." />
+		<replaceregexp file="../README.md" match="## KICKSTART(.*?)## Plugin details" flags="gs" replace="## Plugin details" />
+
+		<replace file=".project" token="A-goobi-plugin-workflow-sample" value="goobi-plugin-workflow-${name}" />
+		<replaceregexp file="build.xml" match="\t&lt;!-- Use this task to let configuration(.*?)&lt;/project&gt;" flags="gs" replace="&lt;/project&gt;" />
+
+	</target>
+
+</project>

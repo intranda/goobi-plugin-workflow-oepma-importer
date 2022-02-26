@@ -1,0 +1,156 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml" xmlns:ui="http://xmlns.jcp.org/jsf/facelets" xmlns:composite="http://xmlns.jcp.org/jsf/composite" xmlns:h="http://xmlns.jcp.org/jsf/html" xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:x="http://myfaces.apache.org/tomahawk" xmlns:intranda="http://xmlns.jcp.org/jsf/composite/composites" xmlns:pt="http://xmlns.jcp.org/jsf/passthrough" xmlns:o="http://omnifaces.org/ui" xmlns:p="http://primefaces.org/ui" xmlns:jsf="http://xmlns.jcp.org/jsf">
+
+    <composite:interface>
+    </composite:interface>
+
+    <composite:implementation>
+
+        <style>
+            .progress {
+                border: 1px solid #EFAD4E;
+                padding-left:0;
+                padding-right:0;
+                position: relative;
+            }
+            .progress-bar {
+                height: 100%;
+                background-color: #EFAD4E;
+                margin-top: 0px;
+                line-height: 1.4;
+                box-shadow: none;
+                vertical-align: button;
+            }
+
+
+            .progress span {
+                position: absolute;
+                display: block;
+                width: 100%;
+                color: #666666;
+                font-weight: bold;
+             }
+             
+             #logs {
+                border: 1px solid #ddd;
+                display: block;
+                margin-top: 20px;
+                padding: 5px;
+            }
+        </style>
+        
+        <h:panelGroup>
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="box box-color box-bordered lightgrey">
+                    
+                        <h:form
+                                id="myform"
+                                styleClass="form-horizontal form-bordered"
+                                onkeypress="submitOnEnter(event);">
+                    
+    						<div class="box-title">
+    							<h3>
+    								<i class="fa fa-plug"></i>
+    								<h:outputText value="#{msgs[NavigationForm.workflowPlugin.title]}" />
+    							</h3>
+    						</div>
+    						<div class="box-content">
+    							<h:panelGroup
+    								rendered="#{!LoginForm.hasRole('Plugin_workflow_sample')}">
+    								<h:outputText
+    									styleClass="alert alert-danger alert-dismissable margin-bottom-10 margin-top-10"
+    									value="#{msgs.plugin_administration_missingPermission} Plugin_workflow_sample"/>
+    							</h:panelGroup>
+    
+    							<h:panelGroup id="actionform" styleClass="col-sm-12"
+    								rendered="#{LoginForm.hasRole('Plugin_workflow_sample')}">
+    								
+<!--                                     <h:outputText -->
+<!--                                         styleClass="alert alert-warning alert-dismissable margin-bottom-10 margin-top-10" -->
+<!--                                         value="#{msgs.plugin_intranda_workflow_sample_introduction}: #{NavigationForm.workflowPlugin.importFolder}"/> -->
+    							    
+                                
+                                    <div class="form-actions">
+                                    
+                                        <div class="row">
+                                    
+                                            <!-- progress bar -->
+                                            <h:panelGroup class="col-sm-8 progress" id="resultProgress" rendered="#{NavigationForm.workflowPlugin.progress ge 0}">
+                                                <div class="progress-bar #{NavigationForm.workflowPlugin.run ? 'progress-bar-striped active' : ''}" role="progressbar"
+                                                    aria-valuenow="#{NavigationForm.workflowPlugin.progress}"
+                                                    aria-valuemin="0" aria-valuemax="100"
+                                                    style="width:#{NavigationForm.workflowPlugin.progress}%">
+                                                    <span>
+                                                        <h:outputText
+                                                            value="#{NavigationForm.workflowPlugin.itemCurrent} #{msgs.of} #{NavigationForm.workflowPlugin.itemsTotal} - #{NavigationForm.workflowPlugin.progress}%" />
+                                                    </span>
+                                                </div>
+                                            </h:panelGroup>
+                                            <!-- // progress bar -->
+                                        
+                                            <!-- buttons -->
+                                            <h:panelGroup class="#{NavigationForm.workflowPlugin.progress ge 0 ? 'col-sm-4' : 'col-sm-12'}">
+                                                
+                                                <!-- import button -->
+                                                <div class="btn-group font-size-s pull-right" data-toggle="tooltip" title="#{msgs.plugin_intranda_workflow_sample_startImportTitle}">
+                                                    <a class="btn  btn-blue font-size-s dropdown-toggle" data-toggle="dropdown">
+                                                        <i class="fa fa-play-circle margin-right-10"></i>
+                                                        <h:outputText styleClass="margin-right-5" value="#{msgs.plugin_intranda_workflow_sample_startImport}" />
+                                                        <span class="caret"></span>
+                                                    </a>
+                                        
+                                                    <ul class="dropdown-menu">
+                                                        <ui:repeat
+                                                            var="importset"
+                                                            value="#{NavigationForm.workflowPlugin.importSets}">
+                                                            <li><button jsf:action="#{NavigationForm.workflowPlugin.startImport(importset)}"
+                                                                    aria-label="#{importset.title}" class="dropdown-item">
+                                                                    <h:outputText value="#{importset.title}" />
+                                                                </button>
+                                                            </li>
+                                                        </ui:repeat>
+                                                    </ul>
+                                                </div>
+
+                                                <!-- Cancel button -->
+                                                <button jsf:id="cancel" class="btn font-size-s margin-right-5 pull-right" jsf:action="#{NavigationForm.workflowPlugin.cancel}" jsf:rendered="#{NavigationForm.workflowPlugin.run}">
+                                                    <h:outputText value="#{msgs.abbrechen}" />
+                                                </button>
+                                                
+                                            </h:panelGroup>
+                                            <!-- // buttons -->
+                                            
+                                        </div>
+                                    </div>
+    							</h:panelGroup>
+                                
+    						</div>
+                        </h:form>
+					</div>
+				</div>
+			</div>
+        </h:panelGroup>
+
+        <!-- log view -->
+        <h:panelGroup id="logs">
+            <h:panelGroup rendered="#{LoginForm.hasRole('Plugin_workflow_sample')}">
+                <ui:repeat
+                    var="log"
+                    value="#{NavigationForm.workflowPlugin.logQueue}">
+                    <h:outputText value="#{log.message}" style="#{log.level eq 2 ? 'font-weight: bold' : log.level eq 1 ? '' : 'color: #ccc'}"/>
+                    <br/>
+                </ui:repeat>
+            </h:panelGroup>
+        </h:panelGroup>
+        <!-- // log view -->
+        
+        <!-- websocket communication -->
+        <o:socket channel="workflowPluginPush" scope="session">
+            <f:ajax event="update" render="myform" />
+            <f:ajax event="update" render="logs" />
+            <f:ajax event="error" render="globalMessage" />
+        </o:socket>
+        <!-- // websocket communication -->
+        
+    </composite:implementation>
+</ui:composition>
