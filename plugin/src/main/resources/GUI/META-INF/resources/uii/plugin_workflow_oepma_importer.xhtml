@@ -92,28 +92,17 @@
                                             <h:panelGroup class="#{NavigationForm.workflowPlugin.progress ge 0 ? 'col-sm-4' : 'col-sm-12'}">
                                                 
                                                 <!-- import button -->
-                                                <div class="btn-group font-size-s pull-right" data-toggle="tooltip" title="#{msgs.plugin_intranda_workflow_sample_startImportTitle}">
-                                                    <a class="btn  btn-blue font-size-s dropdown-toggle" data-toggle="dropdown">
-                                                        <i class="fa fa-play-circle margin-right-10"></i>
-                                                        <h:outputText styleClass="margin-right-5" value="#{msgs.plugin_intranda_workflow_sample_startImport}" />
-                                                        <span class="caret"></span>
-                                                    </a>
-                                        
-                                                    <ul class="dropdown-menu">
-                                                        <ui:repeat
-                                                            var="importset"
-                                                            value="#{NavigationForm.workflowPlugin.importSets}">
-                                                            <li><button jsf:action="#{NavigationForm.workflowPlugin.startImport(importset)}"
-                                                                    aria-label="#{importset.title}" class="dropdown-item">
-                                                                    <h:outputText value="#{importset.title}" />
-                                                                </button>
-                                                            </li>
-                                                        </ui:repeat>
-                                                    </ul>
-                                                </div>
-
+                                                <button jsf:id="submit" class="btn btn-blue font-size-s pull-right" 
+                                                	jsf:action="#{NavigationForm.workflowPlugin.startImport}" 
+                                                	title="#{msgs.plugin_intranda_workflow_oepma_startImportTitle}">
+                                                    <i class="fa fa-play-circle margin-right-10"></i>
+                                                    <h:outputText styleClass="margin-right-5" value="#{msgs.plugin_intranda_workflow_oepma_startImport}" />
+                                                </button>
+                                                
                                                 <!-- Cancel button -->
-                                                <button jsf:id="cancel" class="btn font-size-s margin-right-5 pull-right" jsf:action="#{NavigationForm.workflowPlugin.cancel}" jsf:rendered="#{NavigationForm.workflowPlugin.run}">
+                                                <button jsf:id="cancel" class="btn font-size-s margin-right-5 pull-right" 
+                                                	jsf:action="#{NavigationForm.workflowPlugin.cancel}" 
+                                                	jsf:rendered="#{NavigationForm.workflowPlugin.run}">
                                                     <h:outputText value="#{msgs.abbrechen}" />
                                                 </button>
                                                 
@@ -137,7 +126,7 @@
                 <ui:repeat
                     var="log"
                     value="#{NavigationForm.workflowPlugin.logQueue}">
-                    <h:outputText value="#{log.message}" style="#{log.level eq 2 ? 'font-weight: bold' : log.level eq 1 ? '' : 'color: #ccc'}"/>
+                    <h:outputText value="#{log.message}" style="#{log.level eq 3 ? 'color: red' : log.level eq 2 ? 'font-weight: bold' : log.level eq 1 ? '' : 'color: #ccc'}"/>
                     <br/>
                 </ui:repeat>
             </h:panelGroup>

@@ -1,19 +1,37 @@
 <config_plugin>
-	
-	<!-- import set existing of excel files and pdf files -->
-	<importSet title="a" source="Source Field A" target="TitleDocMain"/>
-	<importSet title="b" source="Source Field B" target="CatalogIDSource"/>
-	<importSet title="c" source="Source Field C" target="CatalogIDDigital"/>
-	<importSet title="d" source="Source Field D" target="shelfmarksource"/>
-	<importSet title="e" source="Max Mustermann" target="Author" person="true"/>
-	
+
 	<!-- which folder to use as import source -->
-	<importFolder>/opt/digiverso/import/sample/</importFolder>
-	
+	<importFolder>/opt/digiverso/import/oepma/</importFolder>
+
 	<!-- which workflow to use -->
-	<workflow>Sample_Workflow</workflow>
-	
+	<workflow>Privilegien_Import_Workflow</workflow>
+
 	<!-- which publication type to use -->
-	<publicationType>Monograph</publicationType>
-	
+	<publicationType>Privilege</publicationType>
+
+	<!-- define a number of maximum records to import -->
+	<maxRecords>10</maxRecords>
+
+	<!-- Mapping for table Anmelder -->
+	<metadataKey>oepmaKey</metadataKey>
+	<metadataFullname>CreatorsAllOrigin</metadataFullname>
+	<metadataPlace>Place</metadataPlace>
+	<metadataCountry>Country</metadataCountry>
+
+	<!-- Mapping for table Master -->
+	<metadataDate>Date</metadataDate>
+	<metadataTitle>TitleDocMain</metadataTitle>
+	<metadataShelfmark>shelfmarksource</metadataShelfmark>
+	<metadataPdf>oepmaPdf</metadataPdf>
+	<metadataNotes>Note</metadataNotes>
+
+	<!-- Mapping for table Prio -->
+	<metadataPriority>oepmaPriority</metadataPriority>
+	<metadataPriorityCountry>oepmaPriorityCountry</metadataPriorityCountry>
+	<metadataPriorityDate>oepmaPriorityDate</metadataPriorityDate>
+
+	<!-- Additional information -->
+	<metadataFileName>oepmaFileName</metadataFileName>
+	<metadataFilePath>oepmaFilePath</metadataFilePath>
+
 </config_plugin>
