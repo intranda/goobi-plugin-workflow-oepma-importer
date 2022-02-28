@@ -41,6 +41,7 @@ import ugh.dl.DigitalDocument;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
 import ugh.dl.Metadata;
+import ugh.dl.Person;
 import ugh.dl.Prefs;
 import ugh.fileformats.mets.MetsMods;
 
@@ -212,9 +213,16 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
                         mdKey.setValue(ie.getKey());
                         logical.addMetadata(mdKey);
 
-                        Metadata mdFullname = new Metadata(prefs.getMetadataTypeByName(metadataFullname));
-                        mdFullname.setValue(ie.getFullname());
-                        logical.addMetadata(mdFullname);
+//                        Metadata mdFullname = new Metadata(prefs.getMetadataTypeByName(metadataFullname));
+//                        mdFullname.setValue(ie.getFullname());
+//                        logical.addMetadata(mdFullname);
+                        
+                        Person p = new Person(prefs.getMetadataTypeByName(metadataFullname));
+                        String firstname = ie.getFullname().substring(0, ie.getFullname().indexOf(" "));
+                        String lastname = ie.getFullname().substring(ie.getFullname().indexOf(" "));
+                        p.setFirstname(firstname);
+                        p.setLastname(lastname);
+                        logical.addPerson(p);       
                         
                         Metadata mdPlace = new Metadata(prefs.getMetadataTypeByName(metadataPlace));
                         mdPlace.setValue(ie.getPlace());

@@ -14,7 +14,7 @@
 
 	<!-- Mapping for table Anmelder -->
 	<metadataKey>oepmaKey</metadataKey>
-	<metadataFullname>CreatorsAllOrigin</metadataFullname>
+	<metadataFullname>Author</metadataFullname>
 	<metadataPlace>Place</metadataPlace>
 	<metadataCountry>Country</metadataCountry>
 
