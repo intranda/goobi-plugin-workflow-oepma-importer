@@ -4,7 +4,8 @@
 	<importFolder>/opt/digiverso/import/oepma/</importFolder>
 
 	<!-- which workflow to use -->
-	<workflow>Privilegien_Import_Workflow</workflow>
+	<workflowMedia>Privilegien_Import_Pdf_Workflow</workflowMedia>
+	<workflowNoMedia>Privilegien_Import_Workflow</workflowNoMedia>
 
 	<!-- which publication type to use -->
 	<publicationType>Privilege</publicationType>
@@ -33,5 +34,6 @@
 	<!-- Additional information -->
 	<metadataFileName>oepmaFileName</metadataFileName>
 	<metadataFilePath>oepmaFilePath</metadataFilePath>
+	<metadataCollection>General</metadataCollection>
 
 </config_plugin>

@@ -41,6 +41,7 @@ import ugh.dl.DigitalDocument;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
 import ugh.dl.Metadata;
+import ugh.dl.MetadataGroup;
 import ugh.dl.Person;
 import ugh.dl.Prefs;
 import ugh.fileformats.mets.MetsMods;
@@ -64,7 +65,8 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 	@Getter
 	private Queue<LogMessage> logQueue = new CircularFifoQueue<LogMessage>(48);
 	private String importFolder;
-	private String workflow;
+	private String workflowMedia;
+	private String workflowNoMedia;
 	private String publicationType;
 	private int maxRecords;
 
@@ -82,6 +84,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 	private String metadataPriorityDate;
 	private String metadataFileName;
 	private String metadataFilePath;
+	private String metadataCollection;
 	private MultiValuedMap<String, ImportEntry> importEntries = new ArrayListValuedHashMap<>();
 
 	@Override
@@ -105,6 +108,12 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 	}
 
 	/**
+	 * Constructor
+	 */
+	public OepmaImporterWorkflowPlugin(boolean noConfig) {
+	}
+	
+	/**
 	 * private method to read main configuration file
 	 */
 	private void readConfiguration() {
@@ -112,7 +121,8 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 
 		// read some main configuration
 		importFolder = ConfigPlugins.getPluginConfig(title).getString("importFolder");
-		workflow = ConfigPlugins.getPluginConfig(title).getString("workflow");
+		workflowMedia = ConfigPlugins.getPluginConfig(title).getString("workflowMedia");
+		workflowNoMedia = ConfigPlugins.getPluginConfig(title).getString("workflowNoMedia");
 		publicationType = ConfigPlugins.getPluginConfig(title).getString("publicationType");
 		maxRecords = ConfigPlugins.getPluginConfig(title).getInt("maxRecords");
 
@@ -130,7 +140,8 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 		metadataPriorityDate = ConfigPlugins.getPluginConfig(title).getString("metadataPriorityDate");
 		metadataFileName = ConfigPlugins.getPluginConfig(title).getString("metadataFileName");
 		metadataFilePath = ConfigPlugins.getPluginConfig(title).getString("metadataFilePath");
-
+		metadataCollection = ConfigPlugins.getPluginConfig(title).getString("metadataCollection");
+		
 		// write a log into the UI
 		updateLog("Configuration successfully read");
 	}
@@ -165,12 +176,12 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 
 				updateLog("Start running through all import files");
 				int start = 0;
-				int end = importEntries.keys().size();
+				int end = importEntries.asMap().keySet().size();
 				itemsTotal = end - start;
 				itemCurrent = start;
 
 				// run through import objects
-				for (String key : importEntries.keys()) {
+				for (String key : importEntries.asMap().keySet()) {
 					Thread.sleep(100);
 					if (!run) {
 						break;
@@ -191,8 +202,12 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 					updateLog("Start importing: " + processname, 1);
 
 					try {
+						Collection<ImportEntry> col = importEntries.get(key);
+						ImportEntry ie = (ImportEntry) col.toArray()[0];
+
 						// get the correct workflow to use
-						Process template = ProcessManager.getProcessByExactTitle(workflow);
+						boolean hasMedia = StringUtils.isNotBlank(ie.getFilePath());
+						Process template = ProcessManager.getProcessByExactTitle(hasMedia?workflowMedia:workflowNoMedia);
 						Prefs prefs = template.getRegelsatz().getPreferences();
 						Fileformat fileformat = new MetsMods(prefs);
 						DigitalDocument dd = new DigitalDocument();
@@ -213,26 +228,15 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 						mdKey.setValue(key);
 						logical.addMetadata(mdKey);
 
-						Collection<ImportEntry> col = importEntries.get(key);
-						ImportEntry ie = (ImportEntry) col.toArray()[0];
 
-						for (ImportEntry importEntry : col) {
-							if (StringUtils.isNoneBlank(importEntry.getFullname())) {
-								Person p = new Person(prefs.getMetadataTypeByName(metadataFullname));
-								if (importEntry.getFullname().contains(" ")) {
-									String lastname = importEntry.getFullname().substring(0,
-											importEntry.getFullname().indexOf(" "));
-									String firstname = importEntry.getFullname()
-											.substring(importEntry.getFullname().indexOf(" "));
-									p.setFirstname(firstname);
-									p.setLastname(lastname);
-								} else {
-									p.setLastname(importEntry.getFullname());
-								}
-								logical.addPerson(p);
-							}
-						}
-
+						Metadata mdID = new Metadata(prefs.getMetadataTypeByName("CatalogIDDigital"));
+						mdID.setValue(processname);
+						logical.addMetadata(mdID);
+						
+						Metadata mdCol = new Metadata(prefs.getMetadataTypeByName("singleDigCollection"));
+						mdCol.setValue(metadataCollection);
+						logical.addMetadata(mdCol);
+						
 						Metadata mdPlace = new Metadata(prefs.getMetadataTypeByName(metadataPlace));
 						mdPlace.setValue(ie.getPlace());
 						logical.addMetadata(mdPlace);
@@ -268,26 +272,38 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 						Metadata mdFilePath = new Metadata(prefs.getMetadataTypeByName(metadataFilePath));
 						mdFilePath.setValue(ie.getFilePath());
 						logical.addMetadata(mdFilePath);
-
-//                        // create the metadata fields by reading the config (and get content from the content files of course)
-//                        for (ImportSet importSet : importSets) {
-//                            // treat persons different than regular metadata
-//                            if (importSet.isPerson()) {
-//                                logQueue.add(new LogMessage("Add person '" + importSet.getTarget() + "' with value '" + importSet.getSource() + "'", 0));
-//                                Person p = new Person(prefs.getMetadataTypeByName(importSet.getTarget()));
-//                                String firstname = importSet.getSource().substring(0, importSet.getSource().indexOf(" "));
-//                                String lastname = importSet.getSource().substring(importSet.getSource().indexOf(" "));
-//                                p.setFirstname(firstname);
-//                                p.setLastname(lastname);
-//                                logical.addPerson(p);       
-//                            } else {
-//                                logQueue.add(new LogMessage("Add metadata '" + importSet.getTarget() + "' with value '" + importSet.getSource() + "'", 0));
-//                                Metadata mdTitle = new Metadata(prefs.getMetadataTypeByName(importSet.getTarget()));
-//                                mdTitle.setValue(importSet.getSource());
-//                                logical.addMetadata(mdTitle);
-//                            }
-//                        }
-
+						
+						for (ImportEntryPriority iep : ie.getPriorities()) {
+							MetadataGroup mdGroup = new MetadataGroup(prefs.getMetadataGroupTypeByName(metadataPriority));
+						
+							Metadata mdPriorityCountry = new Metadata(prefs.getMetadataTypeByName(metadataPriorityCountry));
+							mdPriorityCountry.setValue(iep.getCountry());
+							mdGroup.addMetadata(mdPriorityCountry);
+							
+							Metadata mdPriorityDate = new Metadata(prefs.getMetadataTypeByName(metadataPriorityDate));
+							mdPriorityDate.setValue(iep.getDate());
+							mdGroup.addMetadata(mdPriorityDate);
+							
+							logical.addMetadataGroup(mdGroup);
+						}
+						
+						for (ImportEntry importEntry : col) {
+							if (StringUtils.isNoneBlank(importEntry.getFullname())) {
+								Person p = new Person(prefs.getMetadataTypeByName(metadataFullname));
+								if (importEntry.getFullname().contains(" ")) {
+									String lastname = importEntry.getFullname().substring(0,
+											importEntry.getFullname().indexOf(" "));
+									String firstname = importEntry.getFullname()
+											.substring(importEntry.getFullname().indexOf(" "));
+									p.setFirstname(firstname);
+									p.setLastname(lastname);
+								} else {
+									p.setLastname(importEntry.getFullname());
+								}
+								logical.addPerson(p);
+							}
+						}
+						
 						// save the process
 						Process process = bhelp.createAndSaveNewProcess(template, processname, fileformat);
 
@@ -359,14 +375,15 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 
 		Document document = getSAXParsedDocument(filepath);
 		List<Element> list = document.getRootElement().getChildren("Anmelder");
-		updateLog("Import Anmelder: " + list.size());
+		int size = list.size();
+		updateLog("Import Anmelder: " + size);
 		int counter = 0;
 
 		for (Element e : list) {
 			if (counter++ > maxRecords) {
 				break;
 			}
-			updateLog("Importing anmelder with key: " + e.getChildText("Schluessel"));
+			updateLog("Importing anmelder with key: " + e.getChildText("Schluessel") + " (" + counter + " of " + size + ")");
 			ImportEntry ie = new ImportEntry();
 			ie.setKey(e.getChildText("Schluessel"));
 			ie.setFullname(e.getChildText("Name"));
@@ -385,7 +402,8 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 		updateLog("Start reading the table Master.xml");
 		Document document = getSAXParsedDocument(filepath);
 		List<Element> list = document.getRootElement().getChildren("Master");
-		updateLog("Import Master: " + list.size());
+		int size = list.size();
+		updateLog("Import Master: " + size);
 		int counter = 0;
 		for (Element e : list) {
 			if (counter++ > maxRecords) {
@@ -394,40 +412,45 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 
 			// first get the key
 			String myKey = e.getChildText("Schluessel");
-			updateLog("Importing master with key: " + myKey);
+			updateLog("Importing master with key: " + myKey + " (" + counter + " of " + size + ")");
 
 			// now get the previously created element from the hashmap
 			if (importEntries.containsKey(myKey)) {
 				Collection<ImportEntry> col = importEntries.get(myKey);
 				for (ImportEntry ie : col) {
-					ie.setDate(e.getChildText("ErtDat"));
-					ie.setTitle(e.getChildText("TitelNeu"));
-					ie.setShelfmark(e.getChildText("AZNeu"));
-					ie.setPdf(e.getChildText("PDFDoc"));
-					ie.setNotes(e.getChildText("Bemerkung"));
-
-					if (StringUtils.isNotBlank(ie.getShelfmark())) {
-						ie.setFileName(ie.getShelfmark().replace("/", "") + ".pdf");
-						// try to find the pdf file in the file system
-						String[] extensions = { "pdf" };
-						Collection<File> files = FileUtils.listFiles(new File(images), extensions, true);
-						for (File file : files) {
-							if (file.getName().equals(ie.getFileName())) {
-								ie.setFilePath(file.getAbsolutePath());
-							}
-						}
-
-					}
+					addMasterInformation(images, e, ie);
 				}
 			} else {
 				ImportEntry ie = new ImportEntry();
 				ie.setKey(myKey);
-				ie.setDate(e.getChildText("ErtDat"));
-				ie.setTitle(e.getChildText("TitelNeu"));
-				ie.setShelfmark(e.getChildText("AZNeu"));
-				ie.setPdf(e.getChildText("PDFDoc"));
-				ie.setNotes(e.getChildText("Bemerkung"));
+				addMasterInformation(images, e, ie);
 				importEntries.put(ie.getKey(), ie);
+			}
+		}
+	}
+
+	/**
+	 * add information from master table
+	 * @param images
+	 * @param e
+	 * @param ie
+	 */
+	private void addMasterInformation(String images, Element e, ImportEntry ie) {
+		ie.setDate(e.getChildText("ErtDat"));
+		ie.setTitle(e.getChildText("TitelNeu"));
+		ie.setShelfmark(e.getChildText("AZNeu"));
+		ie.setPdf(e.getChildText("PDFDoc"));
+		ie.setNotes(e.getChildText("Bemerkung"));
+
+		if (StringUtils.isNotBlank(ie.getShelfmark())) {
+			ie.setFileName(ie.getShelfmark().replace("/", "") + ".pdf");
+			// try to find the pdf file in the file system
+			String[] extensions = { "pdf" };
+			Collection<File> files = FileUtils.listFiles(new File(images), extensions, true);
+			for (File file : files) {
+				if (file.getName().equals(ie.getFileName())) {
+					ie.setFilePath(file.getAbsolutePath());
+				}
 			}
 		}
 	}
@@ -441,7 +464,8 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 		updateLog("Start reading the table Prio.xml");
 		Document document = getSAXParsedDocument(filepath);
 		List<Element> list = document.getRootElement().getChildren("Prio");
-		updateLog("Import Prio: " + list.size());
+		int size = list.size();
+		updateLog("Import Prio: " + size);
 		int counter = 0;
 		for (Element e : list) {
 			if (counter++ > maxRecords) {
@@ -449,7 +473,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 			}
 			// first get the key and create a priority
 			String myKey = e.getChildText("Schluessel");
-			updateLog("Importing prio with key: " + myKey);
+			updateLog("Importing prio with key: " + myKey + " (" + counter + " of " + size + ")");
 			ImportEntryPriority iep = new ImportEntryPriority();
 			iep.setDate(e.getChildText("Prio-Datum"));
 			iep.setCountry(e.getChildText("Prio-Land"));
@@ -575,11 +599,32 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 		private int level = 0;
 	}
 
-	public static void main(String[] args) {
-		OepmaImporterWorkflowPlugin xd = new OepmaImporterWorkflowPlugin();
-		xd.readTableAnmelder("/opt/digiverso/import/oepma/Anmelder.xml");
-		xd.readTableMaster("/opt/digiverso/import/oepma/Master.xml", "/opt/digiverso/import/oepma/Scans");
-		xd.readTablePrio("/opt/digiverso/import/oepma/Prio.xml");
-		xd.printEntries();
+	public static void main(String[] args) throws IOException {
+		OepmaImporterWorkflowPlugin xd = new OepmaImporterWorkflowPlugin(true);
+//		xd.readTableAnmelder("/opt/digiverso/import/oepma/Anmelder.xml");
+//		xd.readTableMaster("/opt/digiverso/import/oepma/Master.xml", "/opt/digiverso/import/oepma/Scans");
+//		xd.readTablePrio("/opt/digiverso/import/oepma/Prio.xml");
+//		xd.printEntries();
+		
+		xd.readTableMasterTitleOnly("/opt/digiverso/import/oepma/Master.xml", "/opt/digiverso/import/oepma/Scans");
+	}
+	
+	/**
+	 * Read the table 'Master' from given xml file and enrich the generated model
+	 * 
+	 * @param filepath
+	 * @throws IOException 
+	 */
+	public void readTableMasterTitleOnly(String filepath, String images) throws IOException {
+		Document document = getSAXParsedDocument(filepath);
+		List<Element> list = document.getRootElement().getChildren("Master");
+		StringBuilder sb = new StringBuilder();
+		List<String> titles = new ArrayList<String>();
+		for (Element e : list) {
+			String myKey = e.getChildText("TitelNeu");
+			sb.append(myKey + "\n");
+			titles.add(myKey);
+		}
+		FileUtils.write(new File("/opt/digiverso/import/titles.txt"), sb.toString());	
 	}
 }
