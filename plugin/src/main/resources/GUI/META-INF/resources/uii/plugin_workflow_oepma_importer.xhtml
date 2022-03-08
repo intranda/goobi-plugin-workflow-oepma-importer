@@ -91,6 +91,14 @@
                                             <!-- buttons -->
                                             <h:panelGroup class="#{NavigationForm.workflowPlugin.progress ge 0 ? 'col-sm-4' : 'col-sm-12'}">
                                                 
+                                                <!-- preparation button -->
+                                                <button jsf:id="prepare" class="btn btn-blue font-size-s pull-right" 
+                                                    jsf:action="#{NavigationForm.workflowPlugin.prepareSmallImportFiles}" 
+                                                    title="#{msgs.plugin_intranda_workflow_oepma_prepareSmallImportFiles}">
+                                                    <i class="fa fa-play-circle margin-right-10"></i>
+                                                    <h:outputText styleClass="margin-right-5" value="#{msgs.plugin_intranda_workflow_oepma_prepareSmallImportFiles}" />
+                                                </button>
+                                                
                                                 <!-- import button -->
                                                 <button jsf:id="submit" class="btn btn-blue font-size-s pull-right" 
                                                 	jsf:action="#{NavigationForm.workflowPlugin.startImport}" 
