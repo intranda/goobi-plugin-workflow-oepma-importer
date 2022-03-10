@@ -171,7 +171,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      * 
      * @param importConfiguration
      */
-    public void prepareSmallImportFiles() {
+    public void prepareInputFiles() {
         log.info("Start OEPMA Import");
         List<String> usedProcessTitles = new ArrayList<String>();
         progress = 0;
@@ -185,7 +185,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
             try {
                 // read the xml data files first
                 readTableAnmelder(importFolder + "Anmelder.xml");
-                readTableMaster(importFolder + "Master.xml", importFolder + "Scans");
+                readTableMaster(importFolder + "Master.xml");
                 readTablePrio(importFolder + "Prio.xml");
 
                 updateLog("Start running through all import files");
@@ -259,7 +259,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
                                 } else {
                                     p.addContent(new Element("lastname").setText(importEntry.getFullname()));
                                 }
-                                priorities.addContent(p);
+                                persons.addContent(p);
                             }
                         }
                         doc.getRootElement().addContent(persons);
@@ -305,7 +305,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      * 
      * @param importConfiguration
      */
-    public void startImport() {
+    public void readInputFiles() {
         log.info("Start OEPMA Import");
         progress = 0;
         BeanHelper bhelp = new BeanHelper();
@@ -398,45 +398,51 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
                         mdNotes.setValue(root.getChildText("notes"));
                         logical.addMetadata(mdNotes);
 
-                        Metadata mdFileName = new Metadata(prefs.getMetadataTypeByName(metadataFileName));
-                        mdFileName.setValue(root.getChildText("filename"));
-                        logical.addMetadata(mdFileName);
+                        File pdfFile = null;
+                        if (StringUtils.isNotBlank(root.getChildText("shelfmark"))) {
+                            String pdffilename = root.getChildText("shelfmark").replace("/", "") + ".pdf";
+                            
+                            Metadata mdFileName = new Metadata(prefs.getMetadataTypeByName(metadataFileName));
+                            mdFileName.setValue(pdffilename);
+                            logical.addMetadata(mdFileName);
 
-                        Metadata mdFilePath = new Metadata(prefs.getMetadataTypeByName(metadataFilePath));
-                        mdFilePath.setValue(root.getChildText("filepath"));
-                        logical.addMetadata(mdFilePath);
+                            // try to find the pdf file in the file system
+                            String[] extensions = { "pdf" };
+                            Collection<File> pfiles = FileUtils.listFiles(new File(importFolder + "Scans"), extensions, true);
+                            for (File pfile : pfiles) {
+                                if (pfile.getName().equals(pdffilename)) {
+                                    pdfFile = pfile;
+                                    Metadata mdFilePath = new Metadata(prefs.getMetadataTypeByName(metadataFilePath));
+                                    mdFilePath.setValue(pfile.getAbsolutePath());
+                                    logical.addMetadata(mdFilePath);
+                                }
+                            }
+                        }                        
 
-//                        for (ImportEntryPriority iep : ie.getPriorities()) {
-//                            MetadataGroup mdGroup = new MetadataGroup(prefs.getMetadataGroupTypeByName(metadataPriority));
-//
-//                            Metadata mdPriorityCountry = new Metadata(prefs.getMetadataTypeByName(metadataPriorityCountry));
-//                            mdPriorityCountry.setValue(iep.getCountry());
-//                            mdGroup.addMetadata(mdPriorityCountry);
-//
-//                            Metadata mdPriorityDate = new Metadata(prefs.getMetadataTypeByName(metadataPriorityDate));
-//                            mdPriorityDate.setValue(iep.getDate());
-//                            mdGroup.addMetadata(mdPriorityDate);
-//
-//                            logical.addMetadataGroup(mdGroup);
-//                        }
-//
-//                        for (ImportEntry importEntry : col) {
-//                            if (StringUtils.isNoneBlank(importEntry.getFullname())) {
-//                                Person p = new Person(prefs.getMetadataTypeByName(metadataFullname));
-//                                if (importEntry.getFullname().contains(" ")) {
-//                                    String lastname = importEntry.getFullname()
-//                                            .substring(0,
-//                                                    importEntry.getFullname().indexOf(" "));
-//                                    String firstname = importEntry.getFullname()
-//                                            .substring(importEntry.getFullname().indexOf(" "));
-//                                    p.setFirstname(firstname);
-//                                    p.setLastname(lastname);
-//                                } else {
-//                                    p.setLastname(importEntry.getFullname());
-//                                }
-//                                logical.addPerson(p);
-//                            }
-//                        }
+                        List<Element> plist = root.getChild("priorities").getChildren("priority");
+                        for (Element pe : plist) {
+                            MetadataGroup mdGroup = new MetadataGroup(prefs.getMetadataGroupTypeByName(metadataPriority));
+
+                            Metadata mdPriorityCountry = new Metadata(prefs.getMetadataTypeByName(metadataPriorityCountry));
+                            mdPriorityCountry.setValue(pe.getChildText("country"));
+                            mdGroup.addMetadata(mdPriorityCountry);
+
+                            Metadata mdPriorityDate = new Metadata(prefs.getMetadataTypeByName(metadataPriorityDate));
+                            mdPriorityDate.setValue(pe.getChildText("date"));
+                            mdGroup.addMetadata(mdPriorityDate);
+
+                            logical.addMetadataGroup(mdGroup);                        
+                        }
+
+                        plist = root.getChild("persons").getChildren("person");
+                        for (Element pe : plist) {
+                            Person p = new Person(prefs.getMetadataTypeByName(metadataFullname));
+                            if (StringUtils.isNotBlank(pe.getChildText("firstname"))) {
+                                p.setFirstname(pe.getChildText("firstname"));
+                            }
+                            p.setLastname(pe.getChildText("lastname"));
+                            logical.addPerson(p);        
+                        }
 
                         // save the process
                         Process process = bhelp.createAndSaveNewProcess(template, processname, fileformat);
@@ -447,15 +453,14 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
                         ProcessManager.saveProcess(process);
 
                         // if media files are given, import these into the media folder of the process
-                        if (StringUtils.isNotBlank(root.getChildText("filepath"))) {
+                        if (pdfFile != null) {
                             updateLog("Start copying media files, as they are available");
-                            File pdf = new File(root.getChildText("filepath"));
                             String targetBase = process.getImagesOrigDirectory(false);
-                            if (pdf.canRead()) {
+                            if (pdfFile.canRead()) {
                                 StorageProvider.getInstance().createDirectories(Paths.get(targetBase));
                                 StorageProvider.getInstance()
-                                        .copyFile(Paths.get(pdf.getAbsolutePath()),
-                                                Paths.get(targetBase, root.getChildText("filename")));
+                                        .copyFile(pdfFile.toPath(),
+                                                Paths.get(targetBase, pdfFile.getName()));
                             }
                         }
 
@@ -534,7 +539,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      * 
      * @param filepath
      */
-    public void readTableMaster(String filepath, String images) {
+    public void readTableMaster(String filepath) {
         updateLog("Start reading the table Master.xml");
         Document document = getSAXParsedDocument(filepath);
         List<Element> list = document.getRootElement().getChildren("Master");
@@ -555,12 +560,12 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
             if (importEntries.containsKey(myKey)) {
                 Collection<ImportEntry> col = importEntries.get(myKey);
                 for (ImportEntry ie : col) {
-                    addMasterInformation(images, e, ie);
+                    addMasterInformation(e, ie);
                 }
             } else {
                 ImportEntry ie = new ImportEntry();
                 ie.setKey(myKey);
-                addMasterInformation(images, e, ie);
+                addMasterInformation(e, ie);
                 importEntries.put(ie.getKey(), ie);
             }
         }
@@ -569,28 +574,27 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
     /**
      * add information from master table
      * 
-     * @param images
      * @param e
      * @param ie
      */
-    private void addMasterInformation(String images, Element e, ImportEntry ie) {
+    private void addMasterInformation(Element e, ImportEntry ie) {
         ie.setDate(e.getChildText("ErtDat"));
         ie.setTitle(e.getChildText("TitelNeu"));
         ie.setShelfmark(e.getChildText("AZNeu"));
         ie.setPdf(e.getChildText("PDFDoc"));
         ie.setNotes(e.getChildText("Bemerkung"));
 
-        if (StringUtils.isNotBlank(ie.getShelfmark())) {
-            ie.setFileName(ie.getShelfmark().replace("/", "") + ".pdf");
-            // try to find the pdf file in the file system
-            String[] extensions = { "pdf" };
-            Collection<File> files = FileUtils.listFiles(new File(images), extensions, true);
-            for (File file : files) {
-                if (file.getName().equals(ie.getFileName())) {
-                    ie.setFilePath(file.getAbsolutePath());
-                }
-            }
-        }
+//        if (StringUtils.isNotBlank(ie.getShelfmark())) {
+//            ie.setFileName(ie.getShelfmark().replace("/", "") + ".pdf");
+//            // try to find the pdf file in the file system
+//            String[] extensions = { "pdf" };
+//            Collection<File> files = FileUtils.listFiles(new File(images), extensions, true);
+//            for (File file : files) {
+//                if (file.getName().equals(ie.getFileName())) {
+//                    ie.setFilePath(file.getAbsolutePath());
+//                }
+//            }
+//        }
     }
 
     /**
@@ -810,25 +814,25 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 //            System.out.println("------------------- " + ++counter + " ---------------------");
 //        }
 //    }
-
-    /**
-     * Read the table 'Master' from given xml file and enrich the generated model
-     * 
-     * @param filepath
-     * @throws IOException
-     */
-    public void readTableMasterTitleOnly(String filepath, String images) throws IOException {
-        Document document = getSAXParsedDocument(filepath);
-        List<Element> list = document.getRootElement().getChildren("Master");
-        StringBuilder sb = new StringBuilder();
-        List<String> titles = new ArrayList<String>();
-        for (Element e : list) {
-            String myKey = e.getChildText("TitelNeu");
-            sb.append(myKey + "\n");
-            titles.add(myKey);
-        }
-        FileUtils.write(new File("/opt/digiverso/import/titles.txt"), sb.toString());
-    }
+//
+//    /**
+//     * Read the table 'Master' from given xml file and enrich the generated model
+//     * 
+//     * @param filepath
+//     * @throws IOException
+//     */
+//    public void readTableMasterTitleOnly(String filepath, String images) throws IOException {
+//        Document document = getSAXParsedDocument(filepath);
+//        List<Element> list = document.getRootElement().getChildren("Master");
+//        StringBuilder sb = new StringBuilder();
+//        List<String> titles = new ArrayList<String>();
+//        for (Element e : list) {
+//            String myKey = e.getChildText("TitelNeu");
+//            sb.append(myKey + "\n");
+//            titles.add(myKey);
+//        }
+//        FileUtils.write(new File("/opt/digiverso/import/titles.txt"), sb.toString());
+//    }
     
     public static final DirectoryStream.Filter<Path> xmlFilter = new DirectoryStream.Filter<Path>() {
         @Override
