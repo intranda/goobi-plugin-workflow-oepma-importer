@@ -3,8 +3,6 @@ package de.intranda.goobi.plugins;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,41 +14,26 @@ import java.util.UUID;
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.goobi.beans.Process;
-import org.goobi.beans.Step;
+import org.goobi.goobiScript.GoobiScriptManager;
+import org.goobi.goobiScript.GoobiScriptResult;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.plugin.interfaces.IPushPlugin;
 import org.goobi.production.plugin.interfaces.IWorkflowPlugin;
 import org.jdom2.Document;
 import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.input.SAXBuilder;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 import org.omnifaces.cdi.PushContext;
 
 import de.sub.goobi.config.ConfigPlugins;
-import de.sub.goobi.helper.BeanHelper;
 import de.sub.goobi.helper.Helper;
-import de.sub.goobi.helper.ScriptThreadWithoutHibernate;
 import de.sub.goobi.helper.StorageProvider;
-import de.sub.goobi.helper.enums.StepStatus;
-import de.sub.goobi.persistence.managers.ProcessManager;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
-import ugh.dl.DigitalDocument;
-import ugh.dl.DocStruct;
-import ugh.dl.Fileformat;
-import ugh.dl.Metadata;
-import ugh.dl.MetadataGroup;
-import ugh.dl.Person;
-import ugh.dl.Prefs;
-import ugh.fileformats.mets.MetsMods;
 
 @PluginImplementation
 @Log4j2
@@ -71,26 +54,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
     @Getter
     private Queue<LogMessage> logQueue = new CircularFifoQueue<LogMessage>(48);
     private String importFolder;
-    private String workflowMedia;
-    private String workflowNoMedia;
-    private String publicationType;
     private int maxRecords = 10000000;
-
-    private String metadataKey;
-    private String metadataFullname;
-    private String metadataPlace;
-    private String metadataCountry;
-    private String metadataDate;
-    private String metadataTitle;
-    private String metadataShelfmark;
-    private String metadataPdf;
-    private String metadataNotes;
-    private String metadataPriority;
-    private String metadataPriorityCountry;
-    private String metadataPriorityDate;
-    private String metadataFileName;
-    private String metadataFilePath;
-    private String metadataCollection;
     private MultiValuedMap<String, ImportEntry> importEntries = new ArrayListValuedHashMap<>();
 
     @Override
@@ -101,55 +65,6 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
     @Override
     public String getGui() {
         return "/uii/plugin_workflow_oepma_importer.xhtml";
-    }
-
-    /**
-     * Constructor
-     */
-    public OepmaImporterWorkflowPlugin() {
-        log.info("Sample importer workflow plugin started");
-
-        // read important configuration first
-        readConfiguration();
-    }
-
-    /**
-     * Constructor
-     */
-    public OepmaImporterWorkflowPlugin(boolean noConfig) {
-    }
-
-    /**
-     * private method to read main configuration file
-     */
-    private void readConfiguration() {
-        updateLog("Start reading the configuration");
-
-        // read some main configuration
-        importFolder = ConfigPlugins.getPluginConfig(title).getString("importFolder");
-        workflowMedia = ConfigPlugins.getPluginConfig(title).getString("workflowMedia");
-        workflowNoMedia = ConfigPlugins.getPluginConfig(title).getString("workflowNoMedia");
-        publicationType = ConfigPlugins.getPluginConfig(title).getString("publicationType");
-        maxRecords = ConfigPlugins.getPluginConfig(title).getInt("maxRecords");
-
-        metadataKey = ConfigPlugins.getPluginConfig(title).getString("metadataKey");
-        metadataFullname = ConfigPlugins.getPluginConfig(title).getString("metadataFullname");
-        metadataPlace = ConfigPlugins.getPluginConfig(title).getString("metadataPlace");
-        metadataCountry = ConfigPlugins.getPluginConfig(title).getString("metadataCountry");
-        metadataDate = ConfigPlugins.getPluginConfig(title).getString("metadataDate");
-        metadataTitle = ConfigPlugins.getPluginConfig(title).getString("metadataTitle");
-        metadataShelfmark = ConfigPlugins.getPluginConfig(title).getString("metadataShelfmark");
-        metadataPdf = ConfigPlugins.getPluginConfig(title).getString("metadataPdf");
-        metadataNotes = ConfigPlugins.getPluginConfig(title).getString("metadataNotes");
-        metadataPriority = ConfigPlugins.getPluginConfig(title).getString("metadataPriority");
-        metadataPriorityCountry = ConfigPlugins.getPluginConfig(title).getString("metadataPriorityCountry");
-        metadataPriorityDate = ConfigPlugins.getPluginConfig(title).getString("metadataPriorityDate");
-        metadataFileName = ConfigPlugins.getPluginConfig(title).getString("metadataFileName");
-        metadataFilePath = ConfigPlugins.getPluginConfig(title).getString("metadataFilePath");
-        metadataCollection = ConfigPlugins.getPluginConfig(title).getString("metadataCollection");
-
-        // write a log into the UI
-        updateLog("Configuration successfully read");
     }
 
     /**
@@ -166,10 +81,11 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      */
     public void prepareInputFiles() {
         log.info("Start OEPMA Input file generation");
+        importFolder = ConfigPlugins.getPluginConfig(title).getString("importFolder");
+        maxRecords = ConfigPlugins.getPluginConfig(title).getInt("maxRecords");
         List<String> usedProcessTitles = new ArrayList<String>();
         progress = 0;
-        BeanHelper bhelp = new BeanHelper();
-        updateLog("Start import");
+        updateLog("Prepare Input Files");
 
         // run the import in a separate thread to allow a dynamic progress bar
         run = true;
@@ -298,217 +214,13 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      */
     public void readInputFiles() {
         log.info("Start OEPMA Import");
-        progress = 0;
-        BeanHelper bhelp = new BeanHelper();
-        updateLog("Start import of input files");
-
-        // run the import in a separate thread to allow a dynamic progress bar
-        run = true;
-        Runnable runnable = () -> {
-
-            try {
-                Path input = Paths.get(importFolder, "input");
-                List<Path> files = StorageProvider.getInstance().listFiles(input.toString(), xmlFilter);
-
-                updateLog("Start running through all input files");
-                int start = 0;
-                int end = files.size();
-                itemsTotal = end - start;
-                itemCurrent = start;
-
-                // run through import objects
-                for (Path f : files) {
-                    Thread.sleep(100);
-                    if (!run) {
-                        break;
-                    }
-
-                    Document document = getSAXParsedDocument(f.toString());
-                    Element root = document.getRootElement();
-                    String processname = root.getChildText("processname");
-                    
-                    updateLog("Start importing: " + processname, 1);
-
-                    try {
-                        // get the correct workflow to use dependent on import file
-                    	// if media files are given, import these into the media folder of the process
-                    	File pdfFile = null;
-                    	String pdfFileName = null;
-                    	
-                        if (StringUtils.isNotBlank(root.getChildText("shelfmark"))) {
-                        	// find out real file name
-                        	pdfFileName = root.getChildText("shelfmark").replace("/", "") + ".pdf";
-
-                            // try to find the pdf file in the file system
-                            String[] extensions = { "pdf" };
-                            Collection<File> pfiles = FileUtils.listFiles(new File(importFolder + "Scans"), extensions, true);
-                            for (File file : pfiles) {
-                                if (file.getName().equals(pdfFileName) && file.canRead()) {
-                                	updateLog("PDF media file exists");
-                                    pdfFile = file;                                    
-                                }
-                            }
-                        }    
-                    	
-                    	// select a process template
-                    	Process template = ProcessManager.getProcessByExactTitle(pdfFile != null ? workflowMedia : workflowNoMedia);
-                        Prefs prefs = template.getRegelsatz().getPreferences();
-                        Fileformat fileformat = new MetsMods(prefs);
-                        DigitalDocument dd = new DigitalDocument();
-                        fileformat.setDigitalDocument(dd);
-
-                        // add the physical basics
-                        DocStruct physical = dd.createDocStruct(prefs.getDocStrctTypeByName("BoundBook"));
-                        dd.setPhysicalDocStruct(physical);
-                        Metadata mdForPath = new Metadata(prefs.getMetadataTypeByName("pathimagefiles"));
-                        mdForPath.setValue("file:///");
-                        physical.addMetadata(mdForPath);
-
-                        // add the logical basics
-                        DocStruct logical = dd.createDocStruct(prefs.getDocStrctTypeByName(publicationType));
-                        dd.setLogicalDocStruct(logical);
-
-                        Metadata mdKey = new Metadata(prefs.getMetadataTypeByName(metadataKey));
-                        mdKey.setValue(root.getChildText("key"));
-                        logical.addMetadata(mdKey);
-
-                        Metadata mdID = new Metadata(prefs.getMetadataTypeByName("CatalogIDDigital"));
-                        mdID.setValue(processname);
-                        logical.addMetadata(mdID);
-
-                        Metadata mdCol = new Metadata(prefs.getMetadataTypeByName("singleDigCollection"));
-                        mdCol.setValue(metadataCollection);
-                        logical.addMetadata(mdCol);
-
-                        Metadata mdPlace = new Metadata(prefs.getMetadataTypeByName(metadataPlace));
-                        mdPlace.setValue(root.getChildText("place"));
-                        logical.addMetadata(mdPlace);
-
-                        Metadata mdCountry = new Metadata(prefs.getMetadataTypeByName(metadataCountry));
-                        mdCountry.setValue(root.getChildText("country"));
-                        logical.addMetadata(mdCountry);
-
-                        Metadata mdDate = new Metadata(prefs.getMetadataTypeByName(metadataDate));
-                        mdDate.setValue(root.getChildText("date"));
-                        logical.addMetadata(mdDate);
-
-                        Metadata mdTitle = new Metadata(prefs.getMetadataTypeByName(metadataTitle));
-                        mdTitle.setValue(root.getChildText("title"));
-                        logical.addMetadata(mdTitle);
-
-                        Metadata mdShelfmark = new Metadata(prefs.getMetadataTypeByName(metadataShelfmark));
-                        mdShelfmark.setValue(root.getChildText("shelfmark"));
-                        logical.addMetadata(mdShelfmark);
-
-                        Metadata mdPdf = new Metadata(prefs.getMetadataTypeByName(metadataPdf));
-                        mdPdf.setValue(root.getChildText("pdf"));
-                        logical.addMetadata(mdPdf);
-
-                        Metadata mdNotes = new Metadata(prefs.getMetadataTypeByName(metadataNotes));
-                        mdNotes.setValue(root.getChildText("notes"));
-                        logical.addMetadata(mdNotes);
-
-                        List<Element> plist = root.getChild("priorities").getChildren("priority");
-                        for (Element pe : plist) {
-                            MetadataGroup mdGroup = new MetadataGroup(prefs.getMetadataGroupTypeByName(metadataPriority));
-
-                            Metadata mdPriorityCountry = new Metadata(prefs.getMetadataTypeByName(metadataPriorityCountry));
-                            mdPriorityCountry.setValue(pe.getChildText("country"));
-                            mdGroup.addMetadata(mdPriorityCountry);
-
-                            Metadata mdPriorityDate = new Metadata(prefs.getMetadataTypeByName(metadataPriorityDate));
-                            mdPriorityDate.setValue(pe.getChildText("date"));
-                            mdGroup.addMetadata(mdPriorityDate);
-
-                            logical.addMetadataGroup(mdGroup);                        
-                        }
-
-                        plist = root.getChild("persons").getChildren("person");
-                        for (Element pe : plist) {
-                            Person p = new Person(prefs.getMetadataTypeByName(metadataFullname));
-                            if (StringUtils.isNotBlank(pe.getChildText("firstname"))) {
-                                p.setFirstname(pe.getChildText("firstname"));
-                            }
-                            p.setLastname(pe.getChildText("lastname"));
-                            logical.addPerson(p);        
-                        }
-
-                        if (StringUtils.isNotBlank(pdfFileName)) {
-                            Metadata mdFileName = new Metadata(prefs.getMetadataTypeByName(metadataFileName));
-                            mdFileName.setValue(pdfFileName);
-                            logical.addMetadata(mdFileName);
-                        } 
-                        
-                        if (pdfFile != null) {
-                        	Metadata mdFilePath = new Metadata(prefs.getMetadataTypeByName(metadataFilePath));
-                        	mdFilePath.setValue(pdfFile.getAbsolutePath());
-                        	logical.addMetadata(mdFilePath);
-                        }
-                        
-                        // save the process
-                        Process process = bhelp.createAndSaveNewProcess(template, processname, fileformat);
-
-                        // add some properties
-                        bhelp.EigenschaftHinzufuegen(process, "Template", template.getTitel());
-                        bhelp.EigenschaftHinzufuegen(process, "TemplateID", "" + template.getId());
-                        ProcessManager.saveProcess(process);
-
-                        // if media file can be read, import this into the media folder of the process
-                        if (pdfFile != null) {
-                            updateLog("Start copying media file");
-                            String targetBase = process.getImagesOrigDirectory(false);
-                            StorageProvider.getInstance().createDirectories(Paths.get(targetBase));
-                            
-                            // create a hard link in java
-                            Files.createLink(Paths.get(targetBase, pdfFile.getName()), pdfFile.toPath());
-                            
-                            // copy the file to the target directory
-                            //StorageProvider.getInstance()
-                            //   .copyFile(pdfFile.toPath(),
-                            //    Paths.get(targetBase, pdfFile.getName()));                            
-                        }
-
-                        // start any open automatic tasks for the created process
-                        for (Step s : process.getSchritteList()) {
-                            if (s.getBearbeitungsstatusEnum().equals(StepStatus.OPEN) && s.isTypAutomatisch()) {
-                                ScriptThreadWithoutHibernate myThread = new ScriptThreadWithoutHibernate(s);
-                                myThread.startOrPutToQueue();
-                            }
-                        }
-                        
-                        // move input file to other location
-                        Path success = Paths.get(importFolder, "success");
-                        if (!success.toFile().exists()) {
-                        	StorageProvider.getInstance().createDirectories(success);
-                        }
-                        StorageProvider.getInstance().move(f, Paths.get(success.toString(), f.getFileName().toString()));
-                        updateLog("Process successfully created with ID: " + process.getId());
-
-                    } catch (Exception e) {
-                        log.error("Error while creating a process during the import", e);
-                        updateLog("Error while creating a process during the import: " + e.getMessage(), 3);
-                        Helper.setFehlerMeldung("Error while creating a process during the import: " + e.getMessage());
-                        pusher.send("error");
-                    }
-
-                    // recalculate progress
-                    itemCurrent++;
-                    progress = 100 * itemCurrent / itemsTotal;
-                    updateLog("Processing of record done.");
-                }
-
-                // finally last push
-                run = false;
-                Thread.sleep(2000);
-                updateLog("Import completed.");
-            } catch (Exception e) {
-                Helper.setFehlerMeldung("Error while trying to execute the import: " + e.getMessage());
-                log.error("Error while trying to execute the import", e);
-                updateLog("Error while trying to execute the import: " + e.getMessage(), 3);
-            }
-
-        };
-        new Thread(runnable).start();
+        GoobiScriptOepmaImport gs = new GoobiScriptOepmaImport();
+        gs.setPluginTitle(title);
+        List<GoobiScriptResult> goobiScriptResults = gs.prepare(null, "ÖPMA Import", null);
+        GoobiScriptManager gsm = Helper.getBeanByClass(GoobiScriptManager.class);
+        gsm.enqueueScripts(goobiScriptResults);
+        gsm.startWork();
+        updateLog("ÖPMA Import started", 2);
     }
 
     @Override
@@ -524,7 +236,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
     public void readTableAnmelder(String filepath) {
         updateLog("Start reading the table Anmelder.xml");
 
-        Document document = getSAXParsedDocument(filepath);
+        Document document = OepmaHelper.getSAXParsedDocument(filepath);
         List<Element> list = document.getRootElement().getChildren("Anmelder");
         int size = list.size();
         updateLog("Import Anmelder: " + size);
@@ -552,7 +264,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      */
     public void readTableMaster(String filepath) {
         updateLog("Start reading the table Master.xml");
-        Document document = getSAXParsedDocument(filepath);
+        Document document = OepmaHelper.getSAXParsedDocument(filepath);
         List<Element> list = document.getRootElement().getChildren("Master");
         int size = list.size();
         updateLog("Import Master: " + size);
@@ -603,7 +315,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      */
     public void readTablePrio(String filepath) {
         updateLog("Start reading the table Prio.xml");
-        Document document = getSAXParsedDocument(filepath);
+        Document document = OepmaHelper.getSAXParsedDocument(filepath);
         List<Element> list = document.getRootElement().getChildren("Prio");
         int size = list.size();
         updateLog("Import Prio: " + size);
@@ -633,23 +345,6 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
                 importEntries.put(ie.getKey(), ie);
             }
         }
-    }
-
-    /**
-     * simple sax parser using JDom2 for the given xml file
-     * 
-     * @param fileName
-     * @return the read jdom document
-     */
-    private Document getSAXParsedDocument(final String fileName) {
-        SAXBuilder builder = new SAXBuilder();
-        Document document = null;
-        try {
-            document = builder.build(fileName);
-        } catch (JDOMException | IOException e) {
-            e.printStackTrace();
-        }
-        return document;
     }
 
     /**
@@ -742,19 +437,14 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
     }
 
     public static void main(String[] args) throws IOException {
-        OepmaImporterWorkflowPlugin xd = new OepmaImporterWorkflowPlugin(true);
+        OepmaImporterWorkflowPlugin xd = new OepmaImporterWorkflowPlugin();
 //        xd.readTableAnmelder("/opt/digiverso/import/oepma/Anmelder.xml");
 //        xd.readTableMaster("/opt/digiverso/import/oepma/Master.xml", "/opt/digiverso/import/oepma/Scans");
 //        xd.readTablePrio("/opt/digiverso/import/oepma/Prio.xml");
 
-        List<Path> files = StorageProvider.getInstance().listFiles(Paths.get("/opt/digiverso/import/oepma", "input").toString(), xmlFilter);
+        List<Path> files = StorageProvider.getInstance().listFiles(Paths.get("/opt/digiverso/import/oepma", "input").toString(), OepmaHelper.xmlFilter);
         System.out.println(files);
     }
     
-    public static final DirectoryStream.Filter<Path> xmlFilter = new DirectoryStream.Filter<Path>() {
-        @Override
-        public boolean accept(Path path) {
-            return path.getFileName().toString().endsWith(".xml");
-        }
-    };
+    
 }
