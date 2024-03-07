@@ -7,7 +7,7 @@
     <relativePath />
   </parent>
   <groupId>io.goobi.workflow.plugin</groupId>
-  <artifactId>plugin-workflow-oepma_importer</artifactId>
+  <artifactId>plugin-workflow-oepma-importer</artifactId>
   <packaging>pom</packaging>
   <modules>
     <module>module-base</module>
