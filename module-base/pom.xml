@@ -3,7 +3,7 @@
   <parent>
     <groupId>io.goobi.workflow.plugin</groupId>
     <artifactId>plugin-workflow-oepma-importer</artifactId>
-    <version>24.08.1</version>
+    <version>24.09-SNAPSHOT</version>
   </parent>
   <artifactId>plugin-workflow-oepma-importer-base</artifactId>
   <packaging>jar</packaging>
