@@ -1,4 +1,15 @@
-<ui:composition xmlns="http://www.w3.org/1999/xhtml" xmlns:ui="http://xmlns.jcp.org/jsf/facelets" xmlns:composite="http://xmlns.jcp.org/jsf/composite" xmlns:h="http://xmlns.jcp.org/jsf/html" xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:intranda="http://xmlns.jcp.org/jsf/composite/composites" xmlns:pt="http://xmlns.jcp.org/jsf/passthrough" xmlns:o="http://omnifaces.org/ui" xmlns:p="http://primefaces.org/ui" xmlns:jsf="http://xmlns.jcp.org/jsf">
+<ui:composition
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:composite="http://xmlns.jcp.org/jsf/composite"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:f="http://xmlns.jcp.org/jsf/core"
+    xmlns:intranda="http://xmlns.jcp.org/jsf/composite/composites"
+    xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
+    xmlns:o="http://omnifaces.org/ui"
+    xmlns:p="http://primefaces.org/ui"
+    xmlns:jsf="http://xmlns.jcp.org/jsf"
+    xmlns:section="http://goobi.io/section">
 
     <composite:interface>
     </composite:interface>
@@ -29,7 +40,7 @@
                 color: #666666;
                 font-weight: bold;
              }
-             
+
              .logs {
                 border: 1px solid #ddd;
                 display: block;
@@ -37,110 +48,112 @@
                 padding: 5px;
             }
         </style>
-        
-        <h:panelGroup>
-			<div class="row">
-				<div class="col-sm-12">
-					<div class="box box-color box-bordered lightgrey">
-                    
-                        <h:form
-                                id="myform"
-                                styleClass="form-horizontal form-bordered"
-                                onkeypress="submitOnEnter(event);">
-                    
-    						<div class="box-title">
-    							<h3>
-    								<i class="fa fa-plug"></i>
-    								<h:outputText value="#{msgs[NavigationForm.workflowPlugin.title]}" />
-    							</h3>
-    						</div>
-    						<div class="box-content">
-    							<h:panelGroup
-    								rendered="#{!LoginForm.hasRole('Plugin_workflow_oepma_importer')}">
-    								<h:outputText
-    									styleClass="alert alert-danger alert-dismissable margin-bottom-10 margin-top-10"
-    									value="#{msgs.plugin_administration_missingPermission} Plugin_workflow_oepma_importer"/>
-    							</h:panelGroup>
-    
-    							<h:panelGroup id="actionform" styleClass="col-sm-12"
-    								rendered="#{LoginForm.hasRole('Plugin_workflow_oepma_importer')}">
-    								
-<!--                                     <h:outputText -->
-<!--                                         styleClass="alert alert-warning alert-dismissable margin-bottom-10 margin-top-10" -->
-<!--                                         value="#{msgs.plugin_intranda_workflow_sample_introduction}: #{NavigationForm.workflowPlugin.importFolder}"/> -->
-    							    
-                                
-                                    <div class="form-actions">
-                                    
-                                        <div class="row">
-                                    
-                                            <!-- progress bar -->
-                                            <h:panelGroup class="col-sm-8 progress" id="resultProgress" rendered="#{NavigationForm.workflowPlugin.progress ge 0}">
-                                                <div class="progress-bar #{NavigationForm.workflowPlugin.run ? 'progress-bar-striped active' : ''}" role="progressbar"
-                                                    aria-valuenow="#{NavigationForm.workflowPlugin.progress}"
-                                                    aria-valuemin="0" aria-valuemax="100"
-                                                    style="width:#{NavigationForm.workflowPlugin.progress}%">
-                                                    <span>
-                                                        <h:outputText
-                                                            value="#{NavigationForm.workflowPlugin.itemCurrent} #{msgs.of} #{NavigationForm.workflowPlugin.itemsTotal} - #{NavigationForm.workflowPlugin.progress}%" />
-                                                    </span>
-                                                </div>
-                                            </h:panelGroup>
-                                            <!-- // progress bar -->
-                                        
-                                            <!-- buttons -->
-                                            <h:panelGroup class="#{NavigationForm.workflowPlugin.progress ge 0 ? 'col-sm-4' : 'col-sm-12'}">
-                                                
-                                                <!-- import button -->
-                                                <button jsf:id="submit" class="btn btn-blue font-size-s pull-right" 
-                                                	jsf:action="#{NavigationForm.workflowPlugin.readInputFiles}" 
-                                                	title="#{msgs.plugin_intranda_workflow_startImportTitle}">
-                                                    <i class="fa fa-play-circle margin-right-10"></i>
-                                                    <h:outputText styleClass="margin-right-5" value="#{msgs.plugin_intranda_workflow_startImport}" />
-                                                </button>
-                                                
-                                                <!-- preparation button -->
-                                                <button jsf:id="prepare" class="btn btn-blue font-size-s pull-right margin-right-5" 
-                                                    jsf:action="#{NavigationForm.workflowPlugin.prepareInputFiles}" 
-                                                    title="#{msgs.plugin_intranda_workflow_prepareTitle}">
-                                                    <i class="fa fa-play-circle margin-right-10"></i>
-                                                    <h:outputText styleClass="margin-right-5" value="#{msgs.plugin_intranda_workflow_prepare}" />
-                                                </button>
-                                                
-                                                <!-- Cancel button -->
-                                                <button jsf:id="cancel" class="btn font-size-s margin-right-5 pull-right" 
-                                                	jsf:action="#{NavigationForm.workflowPlugin.cancel}" 
-                                                	jsf:rendered="#{NavigationForm.workflowPlugin.run}">
-                                                    <h:outputText value="#{msgs.abbrechen}" />
-                                                </button>
-                                                
-                                            </h:panelGroup>
-                                            <!-- // buttons -->
-                                            
-                                        </div>
-                                    </div>
-    							</h:panelGroup>
-                                
-    						</div>
-                        </h:form>
-					</div>
-				</div>
-			</div>
+        <h:panelGroup
+            rendered="#{!LoginForm.hasRole('Plugin_workflow_oepma_importer')}"
+            layout="block"
+            styleClass="alert alert-danger">
+            #{msgs.plugin_administration_missingPermission} Plugin_workflow_oepma_importer
+        </h:panelGroup>
+        <h:panelGroup
+            rendered="#{LoginForm.hasRole('Plugin_workflow_oepma_importer')}"
+            layout="block"
+            styleClass="flow">
+            <section:section type="action">
+                <section:header
+                    icon="plug"
+                    title="#{msgs[NavigationForm.workflowPlugin.title]}" />
+                <section:body padding="true">
+                    <!-- progress bar -->
+                    <h:panelGroup
+                        class="progress"
+                        id="resultProgress"
+                        rendered="#{NavigationForm.workflowPlugin.progress ge 0}">
+                        <div
+                            class="progress-bar #{NavigationForm.workflowPlugin.run ? 'progress-bar-striped active' : ''}"
+                            role="progressbar"
+                            aria-valuenow="#{NavigationForm.workflowPlugin.progress}"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            style="width:#{NavigationForm.workflowPlugin.progress}%">
+                            <span>
+                                <h:outputText
+                                    value="#{NavigationForm.workflowPlugin.itemCurrent} #{msgs.of} #{NavigationForm.workflowPlugin.itemsTotal} - #{NavigationForm.workflowPlugin.progress}%" />
+                            </span>
+                        </div>
+                    </h:panelGroup>
+                    <!-- // progress bar -->
+                </section:body>
+                <section:footer>
+                    <!-- Cancel button -->
+                    <button
+                        jsf:id="cancel"
+                        class="btn btn-blank"
+                        jsf:action="#{NavigationForm.workflowPlugin.cancel}"
+                        jsf:rendered="#{NavigationForm.workflowPlugin.run}">
+                        <h:outputText value="#{msgs.abbrechen}" />
+                    </button>
+
+                    <!-- preparation button -->
+                    <button
+                        jsf:id="prepare"
+                        class="btn btn-blank"
+                        jsf:action="#{NavigationForm.workflowPlugin.prepareInputFiles}"
+                        title="#{msgs.plugin_intranda_workflow_prepareTitle}">
+                        <span class="fa fa-play-circle" aria-hidden="true" />
+                        <span>
+                            #{msgs.plugin_intranda_workflow_prepare}
+                        </span>
+                    </button>
+                    <!-- import button -->
+                    <button
+                        jsf:id="submit"
+                        class="btn btn-action"
+                        jsf:action="#{NavigationForm.workflowPlugin.readInputFiles}"
+                        title="#{msgs.plugin_intranda_workflow_startImportTitle}">
+                        <span class="fa fa-play-circle" aria-hidden="true" />
+                        <span>
+                            #{msgs.plugin_intranda_workflow_startImport}
+                        </span>
+                    </button>
+
+                </section:footer>
+            </section:section>
+			<section:section type="outline">
+                <section:header
+                    icon="list"
+                    title="#{msgs.plugin_intranda_workflow_oepma_importer_log}" />
+                <section:body>
+                    <ol role="list" class="feed">
+                        <ui:repeat var="log"
+                            value="#{NavigationForm.workflowPlugin.logQueue}">
+                            <li class="feed-item">
+                                <span class="feed-item-icon fs-600">
+                                    <ui:fragment rendered="#{log.level eq 0}">
+                                        <span class="fa fa-desktop" aria-hidden="true" />
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{log.level eq 1}">
+                                        <span class="fa fa-info-circle" aria-hidden="true" />
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{log.level eq 2}">
+                                        <span class="fa fa-exclamation-circle" aria-hidden="true" />
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{log.level eq 3}">
+                                        <span class="text-danger fa fa-exclamation-triangle" aria-hidden="true" />
+                                    </ui:fragment>
+                                    <span class="
+                                        filler filler-vertical
+                                        #{log.level == 3 ? 'filler-red' : ''}" />
+                                </span>
+                                <span class="feed-item-content">
+                                    #{log.message}
+                                </span>
+                            </li>
+                        </ui:repeat>
+                    </ol>
+                </section:body>
+            </section:section>
         </h:panelGroup>
 
-        <!-- log view -->
-        <h:panelGroup id="logs">
-            <h:panelGroup styleClass="logs" rendered="#{LoginForm.hasRole('Plugin_workflow_oepma_importer')}">
-                <ui:repeat
-                    var="log"
-                    value="#{NavigationForm.workflowPlugin.logQueue}">
-                    <h:outputText value="#{log.message}" style="#{log.level eq 3 ? 'color: red' : log.level eq 2 ? 'font-weight: bold' : log.level eq 1 ? '' : 'color: #ccc'}"/>
-                    <br/>
-                </ui:repeat>
-            </h:panelGroup>
-        </h:panelGroup>
-        <!-- // log view -->
-        
         <!-- websocket communication -->
         <o:socket channel="workflowPluginPush" scope="session">
             <f:ajax event="update" render="myform" />
@@ -148,6 +161,6 @@
             <f:ajax event="error" render="globalMessage" />
         </o:socket>
         <!-- // websocket communication -->
-        
+
     </composite:implementation>
 </ui:composition>
