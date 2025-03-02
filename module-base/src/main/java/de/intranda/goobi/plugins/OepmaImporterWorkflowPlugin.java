@@ -39,6 +39,7 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 @Log4j2
 public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin {
 
+    private static final long serialVersionUID = 355205933445447355L;
     @Getter
     private String title = "intranda_workflow_oepma_importer";
     private PushContext pusher;
@@ -52,10 +53,9 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
     @Getter
     private int itemsTotal = 0;
     @Getter
-    private Queue<LogMessage> logQueue = new CircularFifoQueue<LogMessage>(48);
-    private String importFolder;
+    private transient Queue<LogMessage> logQueue = new CircularFifoQueue<>(48);
     private int maxRecords = 10000000;
-    private MultiValuedMap<String, ImportEntry> importEntries = new ArrayListValuedHashMap<>();
+    private transient MultiValuedMap<String, ImportEntry> importEntries = new ArrayListValuedHashMap<>();
 
     @Override
     public PluginType getType() {
@@ -81,9 +81,9 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
      */
     public void prepareInputFiles() {
         log.info("Start OEPMA Input file generation");
-        importFolder = ConfigPlugins.getPluginConfig(title).getString("importFolder");
+        String importFolder = ConfigPlugins.getPluginConfig(title).getString("importFolder");
         maxRecords = ConfigPlugins.getPluginConfig(title).getInt("maxRecords");
-        List<String> usedProcessTitles = new ArrayList<String>();
+        List<String> usedProcessTitles = new ArrayList<>();
         progress = 0;
         updateLog("Prepare Input Files");
 
@@ -141,7 +141,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
                         doc.getRootElement().addContent(new Element("shelfmark").setText(ie.getShelfmark()));
                         doc.getRootElement().addContent(new Element("pdf").setText(ie.getPdf()));
                         doc.getRootElement().addContent(new Element("notes").setText(ie.getNotes()));
-                    
+
                         Element priorities = new Element("priorities");
                         for (ImportEntryPriority iep : ie.getPriorities()) {
                             Element p = new Element("priority");
@@ -206,7 +206,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
         };
         new Thread(runnable).start();
     }
-    
+
     /**
      * main method to start the actual import
      * 
@@ -394,7 +394,7 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
         private String filePath;
 
         // table Prio
-        private List<ImportEntryPriority> priorities = new ArrayList<ImportEntryPriority>();
+        private List<ImportEntryPriority> priorities = new ArrayList<>();
     }
 
     /**
@@ -438,13 +438,13 @@ public class OepmaImporterWorkflowPlugin implements IWorkflowPlugin, IPushPlugin
 
     public static void main(String[] args) throws IOException {
         OepmaImporterWorkflowPlugin xd = new OepmaImporterWorkflowPlugin();
-//        xd.readTableAnmelder("/opt/digiverso/import/oepma/Anmelder.xml");
-//        xd.readTableMaster("/opt/digiverso/import/oepma/Master.xml", "/opt/digiverso/import/oepma/Scans");
-//        xd.readTablePrio("/opt/digiverso/import/oepma/Prio.xml");
+        //        xd.readTableAnmelder("/opt/digiverso/import/oepma/Anmelder.xml");
+        //        xd.readTableMaster("/opt/digiverso/import/oepma/Master.xml", "/opt/digiverso/import/oepma/Scans");
+        //        xd.readTablePrio("/opt/digiverso/import/oepma/Prio.xml");
 
-        List<Path> files = StorageProvider.getInstance().listFiles(Paths.get("/opt/digiverso/import/oepma", "input").toString(), OepmaHelper.xmlFilter);
+        List<Path> files =
+                StorageProvider.getInstance().listFiles(Paths.get("/opt/digiverso/import/oepma", "input").toString(), OepmaHelper.xmlFilter);
         System.out.println(files);
     }
-    
-    
+
 }
