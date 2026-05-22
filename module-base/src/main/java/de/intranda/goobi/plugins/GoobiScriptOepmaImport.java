@@ -121,7 +121,13 @@ public class GoobiScriptOepmaImport extends AbstractIGoobiScript implements IGoo
         readConfiguration();
         BeanHelper bhelp = new BeanHelper();
         
-        Path f = Paths.get(gsr.getParameters().get("filename"));
+        Path inputBase = Paths.get(importFolder, "input").normalize();
+        Path f = Paths.get(gsr.getParameters().get("filename")).normalize();
+        if (!f.startsWith(inputBase)) {
+            log.error("Path traversal detected in GoobiScript filename parameter: " + f);
+            Helper.setFehlerMeldung("Path traversal attempt blocked");
+            return;
+        }
 
         Document document = OepmaHelper.getSAXParsedDocument(f.toString());
         Element root = document.getRootElement();
