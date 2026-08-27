@@ -49,37 +49,52 @@
                 padding: 5px;
             }
         </style>
-        <h:panelGroup
-            rendered="#{!LoginForm.hasRole('Plugin_workflow_oepma_importer')}"
-            layout="block"
-            styleClass="alert alert-danger">
-            #{msgs.plugin_administration_missingPermission} Plugin_workflow_oepma_importer
-        </h:panelGroup>
-        <h:panelGroup
-            rendered="#{LoginForm.hasRole('Plugin_workflow_oepma_importer')}"
-            layout="block"
-            styleClass="flow">
-            <section:section type="action">
-                <section:header
-                    icon="plug"
-                    title="#{msgs[NavigationForm.workflowPlugin.title]}" />
-                <section:body padding="true">
-                    <!-- progress bar -->
-                    <h:panelGroup
-                        class="progress"
-                        id="resultProgress"
-                        rendered="#{NavigationForm.workflowPlugin.progress ge 0}">
-                        <div
-                            class="progress-bar #{NavigationForm.workflowPlugin.run ? 'progress-bar-striped active' : ''}"
-                            role="progressbar"
-                            aria-valuenow="#{NavigationForm.workflowPlugin.progress}"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="width:#{NavigationForm.workflowPlugin.progress}%">
-                            <span>
-                                <h:outputText
-                                    value="#{NavigationForm.workflowPlugin.itemCurrent} #{msgs.of} #{NavigationForm.workflowPlugin.itemsTotal} - #{NavigationForm.workflowPlugin.progress}%" />
-                            </span>
+        <util:missing-rights rights="Plugin_workflow_oepma_importer">
+            <h:panelGroup
+                layout="block"
+                styleClass="flow">
+                <section:section type="action">
+                    <section:header
+                        icon="plug"
+                        title="#{msgs[NavigationForm.workflowPlugin.title]}" />
+                    <section:body padding="true">
+                        <!-- progress bar -->
+                        <h:panelGroup
+                            class="progress"
+                            id="resultProgress"
+                            rendered="#{NavigationForm.workflowPlugin.progress ge 0}">
+                            <div
+                                class="progress-bar #{NavigationForm.workflowPlugin.run ? 'progress-bar-striped active' : ''}"
+                                role="progressbar"
+                                aria-valuenow="#{NavigationForm.workflowPlugin.progress}"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                style="width:#{NavigationForm.workflowPlugin.progress}%">
+                                <span>
+                                    <h:outputText
+                                        value="#{NavigationForm.workflowPlugin.itemCurrent} #{msgs.of} #{NavigationForm.workflowPlugin.itemsTotal} - #{NavigationForm.workflowPlugin.progress}%" />
+                                </span>
+                            </div>
+                        </h:panelGroup>
+                        <!-- // progress bar -->
+                    </section:body>
+                    <section:footer>
+                        <!-- Cancel button -->
+                        <button
+                            jsf:id="cancel"
+                            class="btn btn-blank"
+                            jsf:action="#{NavigationForm.workflowPlugin.cancel}"
+                            jsf:rendered="#{NavigationForm.workflowPlugin.run}">
+                            <h:outputText value="#{msgs.abbrechen}" />
+                        </button>
+
+                        <!-- preparation button -->
+                        <button
+                            jsf:id="prepare"
+                            class="btn btn-blank"
+                            jsf:action="#{NavigationForm.workflowPlugin.prepareInputFiles}"
+                            title="#{msgs.plugin_intranda_workflow_prepareTitle}">
+                            <util:icon-text icon="circle-play" text="#{msgs.plugin_intranda_workflow_prepare}" />
                         </div>
                     </h:panelGroup>
                     <!-- // progress bar -->
